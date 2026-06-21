@@ -12,12 +12,19 @@
 <style>
   :root{ --pink:#ff2d96; --fill:#fbf6ea; --grid:#e8edf2; --green:#15a34a; --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f6f8fb; --gravel:#6b7280; --kom:#2c7be5; --kom-mid:#3aa0ff; --spr:#f97316; --spr-mid:#fb923c; }
   *{box-sizing:border-box}
-  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;color:var(--text);background:radial-gradient(1000px 600px at 20% -10%,#fff 0%,#f3f6fb 40%,#eef3fb 70%,var(--bg) 100%)}
+  html{height:100%}
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;color:var(--text);background:radial-gradient(1000px 600px at 20% -10%,#fff 0%,#f3f6fb 40%,#eef3fb 70%,var(--bg) 100%);height:100vh;overflow:hidden;display:flex;flex-direction:column}
   h1,h2,h3{font-family:Montserrat,Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;letter-spacing:.2px}
-  header.top{padding:18px 22px;background:linear-gradient(180deg,#ffffff 0%, #f9fbff 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  header.top{padding:18px 22px;background:linear-gradient(180deg,#ffffff 0%, #f9fbff 100%);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;flex:0 0 auto}
   h1{margin:0;font-size:24px;font-weight:800}
-  .layout{display:flex;gap:0;height:calc(100vh - 64px);padding:10px}
+  .layout{display:flex;gap:0;flex:1 1 auto;min-height:0;padding:10px}
   .col{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  /* thin, unobtrusive scrollbars so they stop eating horizontal space */
+  .content,.list,.viz,.scroll-y{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+  .content::-webkit-scrollbar,.list::-webkit-scrollbar,.viz::-webkit-scrollbar,.scroll-y::-webkit-scrollbar{width:7px;height:7px}
+  .content::-webkit-scrollbar-thumb,.list::-webkit-scrollbar-thumb,.viz::-webkit-scrollbar-thumb,.scroll-y::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+  .content::-webkit-scrollbar-thumb:hover,.list::-webkit-scrollbar-thumb:hover,.viz::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+  .content::-webkit-scrollbar-track,.list::-webkit-scrollbar-track,.viz::-webkit-scrollbar-track,.scroll-y::-webkit-scrollbar-track{background:transparent}
   .col-left{flex:0 0 300px;min-width:240px}
   .col-mid{flex:0 0 320px;min-width:260px}
   .col-right{flex:1 1 auto;min-width:340px}
@@ -60,7 +67,8 @@
   .settings-title{padding:10px 2px 2px;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:13px;color:#0f172a}
   /* Tablet / small laptop: stack into one scrolling column */
   @media (max-width: 1024px){
-    body{overflow:auto}
+    html{height:auto}
+    body{overflow:auto;height:auto;display:block}
     .layout{flex-direction:column;height:auto;min-height:calc(100vh - 64px);padding:10px;gap:10px}
     .col, .col-left, .col-mid, .col-right{flex:1 1 auto !important;min-width:0 !important;width:100%;overflow:visible}
     .resizer{display:none}
@@ -84,7 +92,7 @@
 </style>
 </head>
 <body>
-<header class="top"><h1>Simple Elevation</h1><div class="se-actions"><button id="undoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button><button id="redoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button></div></header>
+<header class="top"><h1>Simple Elevation</h1><div class="se-actions"><button id="undoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button><button id="redoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button><button id="clearAllBtn" class="ghost" title="Rimuovi GPX e tutte le marcature per ricominciare">🗑 Pulisci tutto</button></div></header>
 <div class="layout" id="layout">
   <div class="col col-left">
     <section class="card" style="height:100%">
@@ -100,6 +108,7 @@
           <input type="checkbox" id="poiComune" checked style="width:auto;margin:0;flex:0 0 auto"> POI: compila col comune più vicino
         </label>
         <div id="selHint" class="sel-hint"></div>
+        <div class="muted" style="font-size:11.5px;line-height:1.5;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:7px 9px">Prefissi etichette &mdash; salite: <strong>cat1</strong>…<strong>cat4</strong>, <strong>cathc</strong> (es. <em>cat2 Colle del Nivolet</em>) · POI: <strong>poisprint</strong>, <strong>poifeed</strong> (es. <em>poisprint Traguardo Volante</em>)</div>
         <div class="row" style="margin-top:2px">
           <button id="addClimb" class="pink" disabled>Add climb</button>
           <button id="clearClimbs" class="ghost" disabled>Clear climbs</button>
@@ -465,6 +474,21 @@ function doUndo(){ if(!undoStack.length) return; redoStack.push(snapshotState())
 function doRedo(){ if(!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); }
 function resetUndo(){ undoStack.length=0; redoStack.length=0; updateUndoButtons(); }
 function updateUndoButtons(){ if(undoBtn) undoBtn.disabled=!undoStack.length; if(redoBtn) redoBtn.disabled=!redoStack.length; }
+function clearAll(){
+  if(state.points.length || state.climbs.length || state.pois.length || state.gravels.length){
+    if(!confirm('Rimuovere il GPX e tutte le marcature per ricominciare con una nuova traccia?')) return;
+  }
+  state.points=[]; state.climbs=[]; state.pois=[]; state.gravels=[]; state.namedWaypoints=[];
+  state.minEle=0; state.maxEle=0; state.viewStart=0; state.viewEnd=1;
+  state.selecting=null; state.selectingPoi=false; state.selectingGravel=false; state.loopMode=false; state.tempStart=null; setHint('');
+  state.projectName='elevation';
+  startLabel.value=''; finishLabel.value='';
+  if(gpxInput) gpxInput.value='';
+  if(map){ clearMarkers(mapKomMarkers); clearMarkers(mapSprintMarkers); if(routeLayer){ routeLayer.remove(); routeLayer=null; } if(mapCursor){ mapCursor.remove(); mapCursor=null; } }
+  resetUndo(); setButtonsEnabled(false);
+  renderClimbList(); renderPoiList(); renderGravelList();
+  if(svg) svg.innerHTML='';
+}
 function buildLoops(aIdx, bIdx){
   if(!state.points.length || bIdx<=aIdx) return;
   const laps=Math.max(1, parseInt(loopCountInput && loopCountInput.value,10)||1);
@@ -488,11 +512,12 @@ function buildLoops(aIdx, bIdx){
 function ensureGuide(){ if(!guideGroup || !guideGroup.isConnected){ guideGroup=document.createElementNS(NS,'g'); guideGroup.setAttribute('pointer-events','none'); svg.appendChild(guideGroup); } else { guideGroup.innerHTML=''; } }
 function wrapLinesMode(name,maxChars,toUpper){ const raw=(name||'').trim(); const s=toUpper? raw.toUpperCase() : raw; if(!s) return ['']; if(s.length<=maxChars) return [s]; const words=s.split(/\s+/); if(words.length===1){ const mid=Math.ceil(s.length/2); return [s.slice(0,mid), s.slice(mid)]; } let l1='', l2=''; for(const w of words){ const cand=(l1?l1+' ':'')+w; if(cand.length<=maxChars) l1=cand; else l2=(l2?l2+' ':'')+w; } return l2? [l1,l2] : [l1]; }
 function hexToRgba(hex, alpha){ let h=hex.replace('#',''); if(h.length===3){ h=h.split('').map(c=>c+c).join(''); } const r=parseInt(h.slice(0,2),16); const g=parseInt(h.slice(2,4),16); const b=parseInt(h.slice(4,6),16); return `rgba(${r},${g},${b},${alpha})`; }
-function parseKom(name){ const m=String(name||'').trim().match(/^KOM(HC|[0-4])\s*(.*)$/i); if(!m) return null; const tier=m[1].toUpperCase(); const label=m[2]||''; return {tier,label}; }
-function isSprint(name){ return /^\s*sprint\b/i.test(String(name||'')); }
-function sprintDisplayName(name){ const n=String(name||'').trim(); if(/^\s*sprint\b/i.test(n)){ const stripped=n.replace(/^\s*sprint\s*[:\-]?\s*/i,'').trim(); return stripped||'SPRINT'; } return n||'POI'; }
+function parseKom(name){ const m=String(name||'').trim().match(/^(?:KOM|CAT|GPM)\s*(HC|[0-4])\s*[:\-]?\s*(.*)$/i); if(!m) return null; const tier=m[1].toUpperCase(); const label=m[2]||''; return {tier,label}; }
+function poiKind(name){ const n=String(name||'').trim(); let m=n.match(/^(?:poisprint|sprint)\b\s*[:\-]?\s*(.*)$/i); if(m) return {type:'sprint', label:(m[1]||'').trim()}; m=n.match(/^(?:poifeed|feed|rifornimento)\b\s*[:\-]?\s*(.*)$/i); if(m) return {type:'feed', label:(m[1]||'').trim()}; return null; }
+function poiDisplayName(name){ const k=poiKind(name); if(k) return k.label || (k.type==='sprint'?'SPRINT':'FEED'); const n=String(name||'').trim(); return n||'POI'; }
 function drawKomBadge(x,yBase,tier){ const size=25; const g=createEl('g',{transform:`translate(${x-size/2},${yBase-size/2})`, class:'badge kom'}); const cx=size/2, cy=size/2, r=size/2; const ring=createEl('circle',{cx,cy,r:r,fill:COLORS.kom}); const inner=createEl('circle',{cx,cy,r:r-3,fill:'#3ea0ff'}); const mid=createEl('circle',{cx,cy,r:r-6,fill:COLORS.komMid}); const txt=createEl('text',{x:cx,y:cy+5,'text-anchor':'middle','font-size':'16','font-family':'Montserrat, sans-serif','font-weight':'800'}); txt.setAttribute('style','fill:#fff'); txt.textContent=(tier==='HC')?'HC':(tier==='0'?'▼':tier); g.appendChild(ring); g.appendChild(inner); g.appendChild(mid); g.appendChild(txt); return g; }
 function drawSprintBadge(x,yBase){ const size=25; const g=createEl('g',{transform:`translate(${x-size/2},${yBase-size/2})`, class:'badge sprint'}); const cx=size/2, cy=size/2, r=size/2; const ring=createEl('circle',{cx,cy,r:r,fill:COLORS.sprint}); const inner=createEl('circle',{cx,cy,r:r-3,fill:COLORS.sprintMid}); const mid=createEl('circle',{cx,cy,r:r-6,fill:COLORS.sprint}); const txt=createEl('text',{x:cx,y:cy+5,'text-anchor':'middle','font-size':'16','font-family':'Montserrat, sans-serif','font-weight':'800'}); txt.setAttribute('style','fill:#fff'); txt.textContent='S'; g.appendChild(ring); g.appendChild(inner); g.appendChild(mid); g.appendChild(txt); return g; }
+function drawFeedBadge(x,yBase){ const size=25; const g=createEl('g',{transform:`translate(${x-size/2},${yBase-size/2})`, class:'badge feed'}); const cx=size/2, cy=size/2, r=size/2; const ring=createEl('circle',{cx,cy,r:r,fill:'#0f766e'}); const inner=createEl('circle',{cx,cy,r:r-3,fill:'#14b8a6'}); const mid=createEl('circle',{cx,cy,r:r-6,fill:'#0f766e'}); const txt=createEl('text',{x:cx,y:cy+5,'text-anchor':'middle','font-size':'15','font-family':'Montserrat, sans-serif','font-weight':'800'}); txt.setAttribute('style','fill:#fff'); txt.textContent='F'; g.appendChild(ring); g.appendChild(inner); g.appendChild(mid); g.appendChild(txt); return g; }
 function draw(){
   svg.innerHTML='';
   if(!state.points.length){ const t=createEl('text',{x:640,y:260,'text-anchor':'middle',fill:'#94a3b8','font-size':'18'}); t.textContent='Load a GPX to render the elevation profile'; svg.appendChild(t); return; }
@@ -531,8 +556,8 @@ function draw(){
   /* POIs with sprint badge */
   state.pois.forEach((p)=>{ if(!state.points[p.idx]) return; const pt=state.points[p.idx]; const x=xScale.f(pt.d); const yEnd=yScale.f(pt.eleS); let labelY=Math.max(margin.t+10,yEnd-10) - (p.offsetY||0); const lineTop=Math.min(labelY, yEnd); gPois.appendChild(createEl('line',{x1:x,y1:lineTop,x2:x,y2:margin.t+h,stroke:COLORS.guide}));
     const text=createEl('text',{x:x,y:labelY,fill:COLORS.text,'font-size':'14','text-anchor':'start',transform:`rotate(-90 ${x} ${labelY})`});
-    const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family','Montserrat, sans-serif'); tName.setAttribute('font-weight','300'); tName.setAttribute('x',x); tName.setAttribute('y',labelY); tName.textContent=`${sprintDisplayName(p.name)} · ${Math.round(pt.eleS)} m · km ${(pt.d/1000).toFixed(1)}`; text.appendChild(tName); gPois.appendChild(text);
-    if(state.showSprint && isSprint(p.name)){ gBadges.appendChild(drawSprintBadge(x, yBase)); }
+    const tName=document.createElementNS(NS,'tspan'); tName.setAttribute('font-family','Montserrat, sans-serif'); tName.setAttribute('font-weight','300'); tName.setAttribute('x',x); tName.setAttribute('y',labelY); tName.textContent=`${poiDisplayName(p.name)} · ${Math.round(pt.eleS)} m`; text.appendChild(tName); gPois.appendChild(text);
+    if(state.showSprint){ const k=poiKind(p.name); if(k && k.type==='sprint') gBadges.appendChild(drawSprintBadge(x, yBase)); else if(k && k.type==='feed') gBadges.appendChild(drawFeedBadge(x, yBase)); }
     const vp=verticalPartial(pt.d); if(vp) gPois.appendChild(vp); }); svg.appendChild(gPois);
 
   svg.appendChild(gBadges);
@@ -578,10 +603,11 @@ clearPoisBtn.addEventListener('click', ()=>{ if(!state.pois.length) return; push
 clearGravelBtn.addEventListener('click', ()=>{ if(!state.gravels.length) return; pushUndo(); state.gravels=[]; renderGravelList(); draw(); });
 if(loopAllBtn) loopAllBtn.addEventListener('click', ()=>{ if(!state.points.length) return; buildLoops(0, state.points.length-1); });if(loopPartBtn) loopPartBtn.addEventListener('click', beginLoopMode);
 if(undoBtn) undoBtn.addEventListener('click', doUndo);
+const clearAllBtn=document.getElementById('clearAllBtn'); if(clearAllBtn) clearAllBtn.addEventListener('click', clearAll);
 if(redoBtn) redoBtn.addEventListener('click', doRedo);
+function showCrosshairAtD(d){ if(!state.points.length) return; ensureGuide(); const sc=getScales(); const idx=nearestIndexByD(d); const p=state.points[idx]; if(!p) return; const x=sc.xScale.f(p.d); const y=sc.yScale.f(p.eleS); guideGroup.innerHTML=''; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',x); line.setAttribute('y1',sc.margin.t); line.setAttribute('x2',x); line.setAttribute('y2',sc.margin.t+sc.h); line.setAttribute('stroke',COLORS.guide); line.setAttribute('stroke-dasharray','4 4'); guideGroup.appendChild(line); const dot=document.createElementNS(NS,'circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r','4.5'); dot.setAttribute('fill',state.lineColor); dot.setAttribute('stroke','#fff'); dot.setAttribute('stroke-width','1.5'); guideGroup.appendChild(dot); updateMapCursorAtD(p.d); }
 svg.addEventListener('mousemove', e=>{
-  if(!(state.selecting==='start'||state.selecting==='end'||state.selectingPoi)) { const {viewStart,viewEnd,margin,w}=getScales(); const rect=svg.getBoundingClientRect(); const xRel=(e.clientX-rect.left-margin.l)/Math.max(1,w); const d=viewStart + Math.min(1,Math.max(0,xRel))*(viewEnd-viewStart); updateMapCursorAtD(d); return; }
-  if(!hitBoxEl) return; ensureGuide(); const {margin,h}=getScales(); const r=hitBoxEl.getBoundingClientRect(); const xRel=Math.min(1, Math.max(0, (e.clientX - r.left)/r.width )); const x=r.left + xRel*r.width; const svgRect=svg.getBoundingClientRect(); const xSvg=((x - svgRect.left)/svgRect.width)*1280; guideGroup.innerHTML=''; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',xSvg); line.setAttribute('y1',margin.t); line.setAttribute('x2',xSvg); line.setAttribute('y2',margin.t+h); line.setAttribute('stroke',COLORS.guide); line.setAttribute('stroke-dasharray','4 4'); guideGroup.appendChild(line); const {viewStart,viewEnd}=getScales(); const dClick=viewStart + xRel*(viewEnd-viewStart); updateMapCursorAtD(dClick);
+  if(!state.points.length||!hitBoxEl) return; const {viewStart,viewEnd}=getScales(); const r=hitBoxEl.getBoundingClientRect(); const xRel=Math.min(1, Math.max(0, (e.clientX - r.left)/r.width )); const d=viewStart + xRel*(viewEnd-viewStart); showCrosshairAtD(d);
 });
 svg.addEventListener('mouseleave', ()=>{ if(guideGroup&&guideGroup.isConnected) guideGroup.innerHTML=''; });
 svg.addEventListener('click', e=>{ if((!state.selecting&&!state.selectingPoi)||!state.points.length||!hitBoxEl) return; const {viewStart,viewEnd}=getScales(); const r=hitBoxEl.getBoundingClientRect(); const xRel=Math.min(1, Math.max(0, (e.clientX - r.left)/r.width )); const dClick=viewStart + xRel*(viewEnd-viewStart); const idx=nearestIndexByD(dClick); handleSelectionClick(idx);
@@ -638,14 +664,15 @@ function buildMap(){ if(!map){ map=L.map('map',{zoomControl:true, attributionCon
 function clearMarkers(arr){ arr.forEach(m=>m.remove()); arr.length=0; }
 function komIconSvg(text){ if(text==='0'){ text='▼'; }  return `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="${COLORS.kom}"/><circle cx="14" cy="14" r="11" fill="#3ea0ff"/><circle cx="14" cy="14" r="8" fill="${COLORS.komMid}"/><text x="14" y="18" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">${text}</text></svg>`; }
 function sprintIconSvg(){ return `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="${COLORS.sprint}"/><circle cx="14" cy="14" r="11" fill="${COLORS.sprintMid}"/><circle cx="14" cy="14" r="8" fill="${COLORS.sprint}"/><text x="14" y="18" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">S</text></svg>`; }
+function feedIconSvg(){ return `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#0f766e"/><circle cx="14" cy="14" r="11" fill="#14b8a6"/><circle cx="14" cy="14" r="8" fill="#0f766e"/><text x="14" y="18" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">F</text></svg>`; }
 function refreshMapOverlays(){ if(!map||!state.points.length) return; clearMarkers(mapKomMarkers); clearMarkers(mapSprintMarkers);
   // KOM markers at climb ends (always on)
   state.climbs.forEach(c=>{ const kom=parseKom(c.name); if(!kom) return; const endPt=state.points[c.endIdx]; if(!endPt) return; const icon=L.divIcon({className:'se-kom', html:komIconSvg(kom.tier==='HC'?'HC':kom.tier), iconSize:[28,28], iconAnchor:[14,14]}); const m=L.marker([endPt.lat,endPt.lon],{icon,interactive:false}); m.addTo(map); mapKomMarkers.push(m); });
   // Sprint markers at POIs (always on)
-  state.pois.forEach(p=>{ if(!isSprint(p.name)) return; const pt=state.points[p.idx]; if(!pt) return; const icon=L.divIcon({className:'se-sprint', html:sprintIconSvg(), iconSize:[28,28], iconAnchor:[14,14]}); const m=L.marker([pt.lat,pt.lon],{icon,interactive:false}); m.addTo(map); mapSprintMarkers.push(m); });
+  state.pois.forEach(p=>{ const k=poiKind(p.name); if(!k) return; const pt=state.points[p.idx]; if(!pt) return; const html=(k.type==='feed')?feedIconSvg():sprintIconSvg(); const cls=(k.type==='feed')?'se-feed':'se-sprint'; const icon=L.divIcon({className:cls, html, iconSize:[28,28], iconAnchor:[14,14]}); const m=L.marker([pt.lat,pt.lon],{icon,interactive:false}); m.addTo(map); mapSprintMarkers.push(m); });
 }
-function updateMapCursorAtD(dist){ if(!map||!state.points.length) return; const idx=nearestIndexByD(dist); const p=state.points[idx]; mapCursor.setLatLng([p.lat,p.lon]); }
-function onMapMove(e){ if(!state.points.length) return; const idx=nearestIndexByDistance(e.latlng.lat, e.latlng.lng); const p=state.points[idx]; const xScale=getScales().xScale; const x=xScale.f(p.d); ensureGuide(); guideGroup.innerHTML=''; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',x); line.setAttribute('y1',getScales().margin.t); line.setAttribute('x2',x); line.setAttribute('y2',getScales().margin.t+getScales().h); line.setAttribute('stroke',COLORS.guide); line.setAttribute('stroke-dasharray','4 4'); guideGroup.appendChild(line); updateMapCursorAtD(p.d); }
+function updateMapCursorAtD(dist){ if(!map||!state.points.length||!mapCursor) return; const idx=nearestIndexByD(dist); const p=state.points[idx]; mapCursor.setLatLng([p.lat,p.lon]); }
+function onMapMove(e){ if(!state.points.length) return; const idx=nearestIndexByDistance(e.latlng.lat, e.latlng.lng); const p=state.points[idx]; if(p) showCrosshairAtD(p.d); }
 function onMapClick(e){ if(!state.points.length) return; const idx=nearestIndexByDistance(e.latlng.lat, e.latlng.lng); handleSelectionClick(idx);
 }
 

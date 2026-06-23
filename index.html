@@ -60,9 +60,14 @@
   .sel-hint{font-size:12px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px;display:none}
   .sel-hint.active{display:block}
   .gtag{display:inline-block;font-size:11px;font-weight:700;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;padding:0 7px;margin-left:6px;vertical-align:middle}
-  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   #undoBtn,#redoBtn{font-weight:700;white-space:nowrap}
-  .se-actions{display:flex;gap:8px;align-items:center}
+  .se-actions{display:flex;gap:8px;align-items:center;flex:0 0 auto}
+  .hdr-fields{display:flex;gap:10px;align-items:flex-end;flex:1 1 auto;min-width:0;max-width:760px}
+  .hdr-item{flex:1 1 0;min-width:120px}
+  .hdr-item label{margin-bottom:4px;font-size:11px}
+  .hdr-item input{padding:7px 10px;border-radius:10px}
+  .hdr-item input[type=file]{padding:6px 8px;font-size:13px}
   .settings-block{border-top:1px solid var(--border);margin-top:6px}
   .settings-title{padding:10px 2px 2px;font-family:Montserrat,Inter,sans-serif;font-weight:700;font-size:13px;color:#0f172a}
   /* Tablet / small laptop: stack into one scrolling column */
@@ -80,6 +85,7 @@
     .list{max-height:240px}
     h1{font-size:20px}
     header.top{padding:12px 16px}
+    .hdr-fields{order:3;flex-basis:100%;max-width:none}
   }
   @media (max-width: 560px){
     #map{height:240px}
@@ -88,11 +94,13 @@
     .row>*{flex:1 1 120px}
     h1{font-size:18px}
     .se-actions{flex-wrap:wrap}
+    .hdr-fields{flex-wrap:wrap}
+    .hdr-item{flex:1 1 100%}
   }
 </style>
 </head>
 <body>
-<header class="top"><h1>Simple Elevation</h1><div class="se-actions"><button id="undoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button><button id="redoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button><button id="clearAllBtn" class="ghost" title="Rimuovi GPX e tutte le marcature per ricominciare">🗑 Pulisci tutto</button></div></header>
+<header class="top"><h1>Simple Elevation</h1><div class="hdr-fields"><div class="hdr-item"><label for="gpx">Upload GPX</label><input id="gpx" type="file" accept=".gpx,.GPX" /></div><div class="hdr-item"><label for="startLabel">Start label</label><input id="startLabel" type="text" placeholder="START" /></div><div class="hdr-item"><label for="finishLabel">Finish label</label><input id="finishLabel" type="text" placeholder="FINISH" /></div></div><div class="se-actions"><button id="undoBtn" class="ghost" disabled title="Annulla (Ctrl+Z)">↶ Annulla</button><button id="redoBtn" class="ghost" disabled title="Ripeti (Ctrl+Maiusc+Z)">↷ Ripeti</button><button id="clearAllBtn" class="ghost" title="Rimuovi GPX e tutte le marcature per ricominciare">🗑 Pulisci tutto</button></div></header>
 <div class="layout" id="layout">
   <div class="col col-left">
     <section class="card" style="height:100%">
@@ -105,7 +113,7 @@
           <input type="checkbox" id="syncEdits" checked style="width:auto;margin:0;flex:0 0 auto"> Modifica etichette dei giri in blocco (nome + posizione)
         </label>
         <label class="repl-toggle" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:0;cursor:pointer">
-          <input type="checkbox" id="poiComune" checked style="width:auto;margin:0;flex:0 0 auto"> POI: compila col comune più vicino
+          <input type="checkbox" id="poiComune" checked style="width:auto;margin:0;flex:0 0 auto"> POI/Start/Finish: compila col comune più vicino
         </label>
         <div id="selHint" class="sel-hint"></div>
         <div class="muted" style="font-size:11.5px;line-height:1.5;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:7px 9px">Prefissi etichette &mdash; salite: <strong>cat1</strong>…<strong>cat4</strong>, <strong>cathc</strong> (es. <em>cat2 Colle del Nivolet</em>) · POI: <strong>poisprint</strong>, <strong>poifeed</strong> (es. <em>poisprint Traguardo Volante</em>)</div>
@@ -163,22 +171,6 @@
   <div class="resizer" data-left="1"></div>
   <div class="col col-right">
     <section class="card viz grid-layout" style="flex:1 1 auto">
-      <div class="content" style="padding-bottom:0">
-        <div class="row">
-          <div>
-            <label for="gpx">Upload GPX</label>
-            <input id="gpx" type="file" accept=".gpx,.GPX" />
-          </div>
-          <div>
-            <label>Start label</label>
-            <input id="startLabel" type="text" placeholder="START" />
-          </div>
-          <div>
-            <label>Finish label</label>
-            <input id="finishLabel" type="text" placeholder="FINISH" />
-          </div>
-        </div>
-      </div>
       <div id="svgWrap">
         <svg id="chart" viewBox="0 0 1280 520" preserveAspectRatio="xMidYMid meet" width="1280" height="520" role="img" aria-label="Elevation profile"></svg>
       </div>
@@ -204,7 +196,7 @@
           </div>
           <div>
             <label for="smooth">Smoothing (m)</label>
-            <input id="smooth" type="number" min="0" step="5" value="500" />
+            <input id="smooth" type="number" min="0" step="100" value="500" />
           </div>
           <div>
             <label for="tick">Tick step (km)</label>
@@ -230,11 +222,11 @@
           </div>
           <div>
             <label for="startOff">START offset (px, up=+)</label>
-            <input id="startOff" type="number" step="2" value="0" />
+            <input id="startOff" type="number" step="10" value="0" />
           </div>
           <div>
             <label for="finishOff">FINISH offset (px, up=+)</label>
-            <input id="finishOff" type="number" step="2" value="0" />
+            <input id="finishOff" type="number" step="10" value="0" />
           </div>
         </div>
         <div class="row" style="margin-top:10px">
@@ -570,7 +562,16 @@ function draw(){
   updateMapCursorAtD(state.viewStart);
 }
 async function loadTextAsXml(text){ const xml=new DOMParser().parseFromString(text,'application/xml'); if(xml.querySelector('parsererror')) throw new Error('XML parse error'); return xml; }
-async function handleGpxXml(xml){ let ptsNodes=qAll(xml,'trkpt'); if(!ptsNodes.length) ptsNodes=qAll(xml,'rtept'); if(!ptsNodes.length){ alert('No points found (trkpt/rtept).'); return; } const pts=[]; let dCum=0; for(let i=0;i<ptsNodes.length;i++){ const n=ptsNodes[i]; const lat=parseNum(n.getAttribute('lat')); const lon=parseNum(n.getAttribute('lon')); const eleNode=n.getElementsByTagName('ele')[0] || (n.getElementsByTagNameNS?n.getElementsByTagNameNS('*','ele')[0]:null); const ele=parseNum(eleNode?eleNode.textContent:'0'); if(i>0){ const p=pts[i-1]; dCum+=haversine(p.lat,p.lon,lat,lon); } pts.push({lat,lon,ele,d:dCum}); } if(pts.length<2 || pts[ptsNodes.length-1]?.d===0){ for(let i=0;i<pts.length;i++) pts[i].d=i*10; } const win=parseFloat(smoothInput.value||0); const sm=movingAverage(pts.map(p=>p.ele), win, pts.map(p=>p.d)); pts.forEach((p,i)=>p.eleS=Number.isFinite(sm[i])?sm[i]:p.ele); { const [mn,mx]=minMax(pts.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.points=pts; state.viewStart=0; state.viewEnd=pts[pts.length-1].d; const wpts=qAll(xml,'wpt'); state.namedWaypoints=wpts.map(w=>({ lat:parseNum(w.getAttribute('lat')), lon:parseNum(w.getAttribute('lon')), name:((w.getElementsByTagName('name')[0] || (w.getElementsByTagNameNS ? w.getElementsByTagNameNS('*','name')[0] : null))?.textContent||'').trim() })).filter(w=>w.name); setButtonsEnabled(true); resetUndo(); buildMap(); draw(); }
+async function handleGpxXml(xml){ let ptsNodes=qAll(xml,'trkpt'); if(!ptsNodes.length) ptsNodes=qAll(xml,'rtept'); if(!ptsNodes.length){ alert('No points found (trkpt/rtept).'); return; } const pts=[]; let dCum=0; for(let i=0;i<ptsNodes.length;i++){ const n=ptsNodes[i]; const lat=parseNum(n.getAttribute('lat')); const lon=parseNum(n.getAttribute('lon')); const eleNode=n.getElementsByTagName('ele')[0] || (n.getElementsByTagNameNS?n.getElementsByTagNameNS('*','ele')[0]:null); const ele=parseNum(eleNode?eleNode.textContent:'0'); if(i>0){ const p=pts[i-1]; dCum+=haversine(p.lat,p.lon,lat,lon); } pts.push({lat,lon,ele,d:dCum}); } if(pts.length<2 || pts[ptsNodes.length-1]?.d===0){ for(let i=0;i<pts.length;i++) pts[i].d=i*10; } const win=parseFloat(smoothInput.value||0); const sm=movingAverage(pts.map(p=>p.ele), win, pts.map(p=>p.d)); pts.forEach((p,i)=>p.eleS=Number.isFinite(sm[i])?sm[i]:p.ele); { const [mn,mx]=minMax(pts.map(p=>p.eleS)); state.minEle=mn; state.maxEle=mx; } state.points=pts; state.viewStart=0; state.viewEnd=pts[pts.length-1].d; const wpts=qAll(xml,'wpt'); state.namedWaypoints=wpts.map(w=>({ lat:parseNum(w.getAttribute('lat')), lon:parseNum(w.getAttribute('lon')), name:((w.getElementsByTagName('name')[0] || (w.getElementsByTagNameNS ? w.getElementsByTagNameNS('*','name')[0] : null))?.textContent||'').trim() })).filter(w=>w.name); setButtonsEnabled(true); resetUndo(); buildMap(); draw(); autofillEndpointLabels(); }
+// Fill Start/Finish labels with the nearest comune, same lookup used for POIs.
+// Only touches fields that are still empty, and only if the value is still empty
+// once the (throttled) geocode result comes back, so manual edits always win.
+function autofillEndpointLabels(){
+  if(!state.poiAutofillComune || !state.points.length) return;
+  const first=state.points[0], last=state.points[state.points.length-1];
+  if(first && !startLabel.value.trim()){ queueComune(first.lat,first.lon,(nm)=>{ if(nm && !startLabel.value.trim()){ startLabel.value=nm; draw(); } }); }
+  if(last && !finishLabel.value.trim()){ queueComune(last.lat,last.lon,(nm)=>{ if(nm && !finishLabel.value.trim()){ finishLabel.value=nm; draw(); } }); }
+}
 
 function fileBaseName(n){ if(!n) return 'elevation'; return n.replace(/\.[^.]*$/,''); }
 
@@ -605,7 +606,16 @@ if(loopAllBtn) loopAllBtn.addEventListener('click', ()=>{ if(!state.points.lengt
 if(undoBtn) undoBtn.addEventListener('click', doUndo);
 const clearAllBtn=document.getElementById('clearAllBtn'); if(clearAllBtn) clearAllBtn.addEventListener('click', clearAll);
 if(redoBtn) redoBtn.addEventListener('click', doRedo);
-function showCrosshairAtD(d){ if(!state.points.length) return; ensureGuide(); const sc=getScales(); const idx=nearestIndexByD(d); const p=state.points[idx]; if(!p) return; const x=sc.xScale.f(p.d); const y=sc.yScale.f(p.eleS); guideGroup.innerHTML=''; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',x); line.setAttribute('y1',sc.margin.t); line.setAttribute('x2',x); line.setAttribute('y2',sc.margin.t+sc.h); line.setAttribute('stroke',COLORS.guide); line.setAttribute('stroke-dasharray','4 4'); guideGroup.appendChild(line); const dot=document.createElementNS(NS,'circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r','4.5'); dot.setAttribute('fill',state.lineColor); dot.setAttribute('stroke','#fff'); dot.setAttribute('stroke-width','1.5'); guideGroup.appendChild(dot); updateMapCursorAtD(p.d); }
+// Hover-dot color reflects the current selection mode, so it's a visual reminder
+// of what a click on the chart/map will do right now.
+const HOVER_DOT_COLORS={ normal:'#16a34a', climb:'#dc2626', poi:'#2563eb', gravel:'#6b7280' };
+function hoverDotColor(){
+  if(state.selectingPoi) return HOVER_DOT_COLORS.poi;
+  if(state.selectingGravel) return HOVER_DOT_COLORS.gravel;
+  if(state.selecting && !state.loopMode) return HOVER_DOT_COLORS.climb;
+  return HOVER_DOT_COLORS.normal;
+}
+function showCrosshairAtD(d){ if(!state.points.length) return; ensureGuide(); const sc=getScales(); const idx=nearestIndexByD(d); const p=state.points[idx]; if(!p) return; const x=sc.xScale.f(p.d); const y=sc.yScale.f(p.eleS); guideGroup.innerHTML=''; const line=document.createElementNS(NS,'line'); line.setAttribute('x1',x); line.setAttribute('y1',sc.margin.t); line.setAttribute('x2',x); line.setAttribute('y2',sc.margin.t+sc.h); line.setAttribute('stroke',COLORS.guide); line.setAttribute('stroke-dasharray','4 4'); guideGroup.appendChild(line); const dot=document.createElementNS(NS,'circle'); dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r','4.5'); dot.setAttribute('fill',hoverDotColor()); dot.setAttribute('stroke','#fff'); dot.setAttribute('stroke-width','1.5'); guideGroup.appendChild(dot); updateMapCursorAtD(p.d); }
 svg.addEventListener('mousemove', e=>{
   if(!state.points.length||!hitBoxEl) return; const {viewStart,viewEnd}=getScales(); const r=hitBoxEl.getBoundingClientRect(); const xRel=Math.min(1, Math.max(0, (e.clientX - r.left)/r.width )); const d=viewStart + xRel*(viewEnd-viewStart); showCrosshairAtD(d);
 });
